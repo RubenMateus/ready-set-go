@@ -1,0 +1,33 @@
+<html>
+
+<head></head>
+
+<body>
+  <form id="search-form" action="/search">
+    <input name="search" />
+    <input type="submit" value="Search" />
+  </form>
+  {{if .Query}}
+  <p style="text-align: center;">You searched for <b>{{.Query}}</b></p>
+  <table width="50%" style="margin: auto;">
+    <thead>
+      <tr>
+        <th width="40%">Title</th>
+        <th width="30%">Author</th>
+        <th width="10%">Year</th>
+      </tr>
+    </thead>
+    <tbody style="text-align: center;">
+      {{range .Books}}
+        <tr>
+          <td>{{.Title}}</td>
+          <td>{{.Author}}</td>
+          <td>{{.Year}}</td>
+        </tr>
+      {{end}}
+    </tbody>
+  </table>
+{{end}}
+</body>
+
+</html>
