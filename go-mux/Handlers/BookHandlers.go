@@ -1,4 +1,4 @@
-package main
+package Handler
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	. "github.com/rubenmateus/ready-set-go/go-mux/models"
 )
 
 var books = Books{
