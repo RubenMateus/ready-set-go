@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	_logger "github.com/rubenmateus/ready-set-go/go-mux/Logger"
+	logger "github.com/rubenmateus/ready-set-go/go-mux/Logger"
 )
 
 func NewRouter() *mux.Router {
@@ -14,7 +14,7 @@ func NewRouter() *mux.Router {
 		var handler http.Handler
 
 		handler = route.HandlerFunc
-		handler = _logger.Log(handler, route.Name)
+		handler = logger.Log(handler, route.Name)
 
 		router.
 			Methods(route.Method).

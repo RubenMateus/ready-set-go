@@ -7,6 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 type SearchPage struct {
@@ -21,7 +24,23 @@ type Book struct {
 	ID     string `xml:"owi,attr"`
 }
 
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "123"
+	dbname   = "test"
+)
+
 func main() {
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+
+	db, err := gorm.Open("postgres", psqlInfo)
+	if err != nil {
+		panic("failed to connect database")
+	}
+	defer db.Close()
+
 	templates := template.Must(template.ParseFiles("templates/index.html"))
 
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
