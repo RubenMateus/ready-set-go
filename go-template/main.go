@@ -7,6 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 type SearchPage struct {
@@ -21,8 +24,67 @@ type Book struct {
 	ID     string `xml:"owi,attr"`
 }
 
+type BookDb struct {
+	gorm.Model
+	Title          string
+	Author         string
+	OWI            string
+	Classification string
+}
+
+type BookResponse struct {
+	BookData struct {
+		Title  string `xml:"title,attr"`
+		Author string `xml:"author,attr"`
+		ID     string `xml:"owi,attr"`
+	} `xml:"work"`
+	Classification struct {
+		MostPopular string `xml:"sfa,attr"`
+	} `xml:"recommendations>ddc>mostPopular"`
+}
+
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "123"
+	dbname   = "go-books"
+)
+
 func main() {
+	psqlInfo := fmt.
+		Sprintf(
+			"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+			host, port, user, password, dbname)
+
+	db, err := gorm.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	db.AutoMigrate(&BookDb{})
+
 	templates := template.Must(template.ParseFiles("templates/index.html"))
+
+	http.HandleFunc("/addbook", func(w http.ResponseWriter, r *http.Request) {
+
+		res, e := find(r.FormValue("bookId"))
+		if e != nil {
+			http.Error(w, e.Error(), http.StatusInternalServerError)
+		}
+
+		db.Create(&BookDb{
+			Title:          res.BookData.Title,
+			Author:         res.BookData.Author,
+			OWI:            res.BookData.ID,
+			Classification: res.Classification.MostPopular,
+		})
+
+		if err := templates.ExecuteTemplate(w, "index.html", nil); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
 
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		results, e := search(r.FormValue("search"))
@@ -72,4 +134,16 @@ func fetch(q string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	return ioutil.ReadAll(resp.Body)
+}
+
+func find(id string) (BookResponse, error) {
+	var response BookResponse
+	body, err := fetch("owi=" + url.QueryEscape(id))
+
+	if err != nil {
+		return BookResponse{}, err
+	}
+
+	err = xml.Unmarshal(body, &response)
+	return response, err
 }

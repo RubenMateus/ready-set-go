@@ -13,16 +13,17 @@
 </head>
 
 <body>
-  <div style="width: 75%; margin: auto;">
+  <div style="width: 85%; margin: auto;">
+    <h4 class="text-center" style="padding-top: 10px">Search for your favourite book</h4>
+    <br>
     <form id="search-form" action="/search">
-      <div class="input-group mb-3">
+      <div class="input-group mb-3 w-50 mx-auto">
         <input class="form-control" name="search" placeholder="Search..." />
         <div class="input-group-append">
           <input class="btn btn-outline-secondary" type="submit" value="Search" />
         </div>
       </div>
     </form>
-    <hr>
 
     {{if .Query}}
     <h4 class="text-center" style="background-color: bisque; padding: 15px;">
@@ -35,6 +36,8 @@
           <th scope="col" width="40%">Title</th>
           <th scope="col" width="30%">Author</th>
           <th scope="col" width="10%">Year</th>
+          <th scope="col" width="10%">ID</th>
+          <th scope="col" width="10%"></th>
         </tr>
       </thead>
       <tbody>
@@ -43,6 +46,12 @@
           <td>{{.Title}}</td>
           <td>{{.Author}}</td>
           <td>{{.Year}}</td>
+          <td>
+            <form action="/addbook">
+              <input type="hidden" name="bookId" value="{{.ID}}" />
+              <input type="submit" value="Add" />
+            </form>
+          </td>
         </tr>
         {{end}}
       </tbody>
