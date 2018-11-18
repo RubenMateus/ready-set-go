@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -109,8 +110,20 @@ func main() {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+
 		var p struct{ Books []Book }
-		db.Find(&p.Books)
+
+		order := r.FormValue("sort")
+		if order != "title" && order != "author" && order != "classification" {
+			order = "title"
+		}
+
+		if filterInt, err := strconv.Atoi(r.FormValue("filter")); err == nil {
+			db.Order(order).Where("classification BETWEEN ? AND ?",
+				r.FormValue("filter"), strconv.Itoa(filterInt+100)).Find(&p.Books)
+		} else {
+			db.Order(order).Find(&p.Books)
+		}
 
 		if err := libraryTemplates.ExecuteTemplate(w, "layout", p); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
