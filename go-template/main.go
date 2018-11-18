@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 
 	"github.com/jinzhu/gorm"
@@ -32,12 +34,14 @@ type Book struct {
 	Author         string
 	OWI            string
 	Classification string
+	UserID         uint
 }
 
 type User struct {
 	gorm.Model
 	Username string
 	Password []byte
+	Books    []Book
 }
 
 type BookResponse struct {
@@ -60,11 +64,15 @@ const (
 )
 
 func main() {
-	psqlInfo := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+	dbURL := os.Getenv("DATABASE_URL")
 
-	db, err := gorm.Open("postgres", psqlInfo)
+	if dbURL == "" {
+		dbURL = fmt.Sprintf(
+			"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+			host, port, user, password, dbname)
+	}
+
+	db, err := gorm.Open("postgres", dbURL)
 	if err != nil {
 		panic(err)
 	}
@@ -72,11 +80,29 @@ func main() {
 
 	db.AutoMigrate(&Book{}, &User{})
 
+	withAuth := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			cookie, err := r.Cookie("user")
+			if err != nil || cookie.Value == "" {
+				http.Redirect(w, r, "/login", 302)
+				return
+			}
+
+			var user User
+			db.Find(&user, cookie.Value)
+			if user.ID == 0 {
+				http.Redirect(w, r, "/login", 302)
+				return
+			}
+
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), "user", user)))
+		}
+	}
+
 	libraryTemplates := template.Must(
 		template.ParseFiles("templates/layout.html", "templates/library.html"))
 	searchTemplates := template.Must(
 		template.ParseFiles("templates/layout.html", "templates/search.html"))
-
 	loginTmpl := template.Must(template.ParseFiles("templates/login.html"))
 
 	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
@@ -141,6 +167,7 @@ func main() {
 			Author:         res.BookData.Author,
 			OWI:            res.BookData.ID,
 			Classification: res.Classification.MostPopular,
+			UserID:         r.Context().Value("user").(User).ID,
 		})
 
 		http.Redirect(w, r, "/", 302)
@@ -167,11 +194,13 @@ func main() {
 			order = "title"
 		}
 
+		user := r.Context().Value("user").(User)
+
 		if filterInt, err := strconv.Atoi(r.FormValue("filter")); err == nil {
-			db.Order(order).Where("classification BETWEEN ? AND ?",
-				r.FormValue("filter"), strconv.Itoa(filterInt+100)).Find(&p.Books)
+			db.Model(&user).Order(order).Where("classification BETWEEN ? AND ?",
+				r.FormValue("filter"), strconv.Itoa(filterInt+100)).Related(&p.Books)
 		} else {
-			db.Order(order).Find(&p.Books)
+			db.Model(&user).Order(order).Related(&p.Books)
 		}
 
 		if err := libraryTemplates.ExecuteTemplate(w, "layout", p); err != nil {
@@ -179,7 +208,11 @@ func main() {
 		}
 	}))
 
-	fmt.Println(http.ListenAndServe(":4000", nil))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "4000"
+	}
+	fmt.Println(http.ListenAndServe(":"+port, nil))
 }
 
 func search(query string) ([]Result, error) {
@@ -217,18 +250,7 @@ func fetch(q string) ([]byte, error) {
 	if resp, err = http.Get(url); err != nil {
 		return []byte{}, err
 	}
-
 	defer resp.Body.Close()
 
 	return ioutil.ReadAll(resp.Body)
-}
-
-func withAuth(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if cookie, err := r.Cookie("user"); err != nil || cookie.Value == "" {
-			http.Redirect(w, r, "/login", 302)
-		} else {
-			next.ServeHTTP(w, r)
-		}
-	}
 }
