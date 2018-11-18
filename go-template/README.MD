@@ -1,0 +1,1 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/RubenMateus/ready-set-go)](https://goreportcard.com/report/github.com/RubenMateus/ready-set-go)
