@@ -1,3 +1,4 @@
+{{define "layout"}}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -15,6 +16,7 @@
 <body>
   <div style="width: 85%; margin: auto;">
     <h4 class="text-center" style="padding-top: 10px">Search for your favourite book</h4>
+    <a class="btn btn-dark" href="/" style="float: right;">Your Library</a>
     <br>
     <form id="search-form" action="/search">
       <div class="input-group mb-3 w-50 mx-auto">
@@ -25,41 +27,10 @@
       </div>
     </form>
 
-    {{if .Query}}
-    <h4 class="text-center" style="background-color: bisque; padding: 15px;">
-      You searched for <em>{{.Query}}</em>
-    </h4>
-    <hr>
-    <table class="table table-hover">
-      <thead class="thead-dark">
-        <tr>
-          <th scope="col" width="40%">Title</th>
-          <th scope="col" width="30%">Author</th>
-          <th scope="col" width="10%">Year</th>
-          <th scope="col" width="10%">ID</th>
-          <th scope="col" width="10%"></th>
-        </tr>
-      </thead>
-      <tbody>
-        {{range .Books}}
-        <tr>
-          <td>{{.Title}}</td>
-          <td>{{.Author}}</td>
-          <td>{{.Year}}</td>
-          <td>
-            <form action="/addbook">
-              <input type="hidden" name="bookId" value="{{.ID}}" />
-              <input type="submit" value="Add" />
-            </form>
-          </td>
-        </tr>
-        {{end}}
-      </tbody>
-    </table>
+    {{template "content" .}}
   </div>
-  {{end}}
-
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
 </body>
 
 </html>
+{{end}}

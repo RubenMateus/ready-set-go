@@ -13,18 +13,18 @@ import (
 )
 
 type SearchPage struct {
-	Query string
-	Books []Book
+	Query   string
+	Results []Result
 }
 
-type Book struct {
+type Result struct {
 	Title  string `xml:"title,attr"`
 	Author string `xml:"author,attr"`
 	Year   int    `xml:"hyr,attr"`
 	ID     string `xml:"owi,attr"`
 }
 
-type BookDb struct {
+type Book struct {
 	gorm.Model
 	Title          string
 	Author         string
@@ -52,10 +52,9 @@ const (
 )
 
 func main() {
-	psqlInfo := fmt.
-		Sprintf(
-			"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-			host, port, user, password, dbname)
+	psqlInfo := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
 
 	db, err := gorm.Open("postgres", psqlInfo)
 	if err != nil {
@@ -63,27 +62,38 @@ func main() {
 	}
 	defer db.Close()
 
-	db.AutoMigrate(&BookDb{})
+	db.AutoMigrate(&Book{})
 
-	templates := template.Must(template.ParseFiles("templates/index.html"))
+	libraryTemplates := template.Must(
+		template.ParseFiles("templates/layout.html", "templates/library.html"))
+	searchTemplates := template.Must(
+		template.ParseFiles("templates/layout.html", "templates/search.html"))
+
+	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "book.ico")
+	})
+
+	http.HandleFunc("/removebook", func(w http.ResponseWriter, r *http.Request) {
+		var book Book
+		db.Find(&book, r.FormValue("bookId"))
+		db.Delete(book)
+
+		http.Redirect(w, r, "/", 302)
+	})
 
 	http.HandleFunc("/addbook", func(w http.ResponseWriter, r *http.Request) {
-
 		res, e := find(r.FormValue("bookId"))
 		if e != nil {
 			http.Error(w, e.Error(), http.StatusInternalServerError)
 		}
-
-		db.Create(&BookDb{
+		db.Create(&Book{
 			Title:          res.BookData.Title,
 			Author:         res.BookData.Author,
 			OWI:            res.BookData.ID,
 			Classification: res.Classification.MostPopular,
 		})
 
-		if err := templates.ExecuteTemplate(w, "index.html", nil); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		http.Redirect(w, r, "/", 302)
 	})
 
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
@@ -92,14 +102,17 @@ func main() {
 			http.Error(w, e.Error(), http.StatusInternalServerError)
 		}
 
-		p := SearchPage{Query: r.FormValue("search"), Books: results}
-		if err := templates.ExecuteTemplate(w, "index.html", p); err != nil {
+		p := SearchPage{Query: r.FormValue("search"), Results: results}
+		if err := searchTemplates.ExecuteTemplate(w, "layout", p); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if err := templates.ExecuteTemplate(w, "index.html", nil); err != nil {
+		var p struct{ Books []Book }
+		db.Find(&p.Books)
+
+		if err := libraryTemplates.ExecuteTemplate(w, "layout", p); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
@@ -107,19 +120,31 @@ func main() {
 	fmt.Println(http.ListenAndServe(":4000", nil))
 }
 
-func search(query string) ([]Book, error) {
+func search(query string) ([]Result, error) {
 	var response struct {
-		Books []Book `xml:"works>work"`
+		Results []Result `xml:"works>work"`
 	}
 
 	body, err := fetch("title=" + url.QueryEscape(query))
 
 	if err != nil {
-		return []Book{}, err
+		return []Result{}, err
 	}
 
 	err = xml.Unmarshal(body, &response)
-	return response.Books, err
+	return response.Results, err
+}
+
+func find(id string) (BookResponse, error) {
+	var response BookResponse
+	body, err := fetch("owi=" + url.QueryEscape(id))
+
+	if err != nil {
+		return BookResponse{}, err
+	}
+
+	err = xml.Unmarshal(body, &response)
+	return response, err
 }
 
 func fetch(q string) ([]byte, error) {
@@ -134,16 +159,4 @@ func fetch(q string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	return ioutil.ReadAll(resp.Body)
-}
-
-func find(id string) (BookResponse, error) {
-	var response BookResponse
-	body, err := fetch("owi=" + url.QueryEscape(id))
-
-	if err != nil {
-		return BookResponse{}, err
-	}
-
-	err = xml.Unmarshal(body, &response)
-	return response, err
 }

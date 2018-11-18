@@ -1,0 +1,31 @@
+{{define "content"}}
+<p style="text-align: center;">
+  Your Library Contains {{len .Books}} Books
+</p>
+
+<table class="table table-hover">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col" width="40%">Title</th>
+      <th scope="col" width="30%">Author</th>
+      <th scope="col" width="20%">Classification</th>
+      <th scope="col" width="20%"></th>
+    </tr>
+  </thead>
+  <tbody style="text-align: left;">
+    {{range .Books}}
+    <tr>
+      <td>{{.Title}}</td>
+      <td>{{.Author}}</td>
+      <td>{{.Classification}}</td>
+      <td>
+        <form action="/removebook">
+          <input type="hidden" name="bookId" value="{{.ID}}" />
+          <input class="btn btn-info" type="submit" value="Remove" />
+        </form>
+      </td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+{{end}}
