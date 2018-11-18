@@ -11,6 +11,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type SearchPage struct {
@@ -31,6 +32,12 @@ type Book struct {
 	Author         string
 	OWI            string
 	Classification string
+}
+
+type User struct {
+	gorm.Model
+	Username string
+	Password []byte
 }
 
 type BookResponse struct {
@@ -63,26 +70,68 @@ func main() {
 	}
 	defer db.Close()
 
-	db.AutoMigrate(&Book{})
+	db.AutoMigrate(&Book{}, &User{})
 
 	libraryTemplates := template.Must(
 		template.ParseFiles("templates/layout.html", "templates/library.html"))
 	searchTemplates := template.Must(
 		template.ParseFiles("templates/layout.html", "templates/search.html"))
 
+	loginTmpl := template.Must(template.ParseFiles("templates/login.html"))
+
 	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "book.ico")
 	})
 
-	http.HandleFunc("/removebook", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		if err := loginTmpl.ExecuteTemplate(w, "login.html", nil); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
+
+	http.HandleFunc("/auth/register", func(w http.ResponseWriter, r *http.Request) {
+		pwHash, _ := bcrypt.GenerateFromPassword([]byte(r.FormValue("password")), bcrypt.DefaultCost)
+		user := User{Username: r.FormValue("username"), Password: pwHash}
+
+		db.Create(&user)
+
+		http.SetCookie(w, &http.Cookie{
+			Name:  "user",
+			Value: strconv.Itoa(int(user.ID)),
+			Path:  "/",
+		})
+
+		http.Redirect(w, r, "/", 302)
+	})
+
+	http.HandleFunc("/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		var user User
+		db.Where("username = ?", r.FormValue("username")).First(&user)
+
+		if bcrypt.CompareHashAndPassword(user.Password, []byte(r.FormValue("password"))) == nil {
+			http.SetCookie(w, &http.Cookie{
+				Name:  "user",
+				Value: strconv.Itoa(int(user.ID)),
+				Path:  "/",
+			})
+		}
+		http.Redirect(w, r, "/", 302)
+	})
+
+	http.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "user", Value: "", Path: "/"})
+		http.Redirect(w, r, "/login", 302)
+	})
+
+	http.HandleFunc("/removebook", withAuth(func(w http.ResponseWriter, r *http.Request) {
 		var book Book
 		db.Find(&book, r.FormValue("bookId"))
 		db.Delete(book)
 
 		http.Redirect(w, r, "/", 302)
-	})
+	}))
 
-	http.HandleFunc("/addbook", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/addbook", withAuth(func(w http.ResponseWriter, r *http.Request) {
 		res, e := find(r.FormValue("bookId"))
 		if e != nil {
 			http.Error(w, e.Error(), http.StatusInternalServerError)
@@ -95,9 +144,9 @@ func main() {
 		})
 
 		http.Redirect(w, r, "/", 302)
-	})
+	}))
 
-	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/search", withAuth(func(w http.ResponseWriter, r *http.Request) {
 		results, e := search(r.FormValue("search"))
 		if e != nil {
 			http.Error(w, e.Error(), http.StatusInternalServerError)
@@ -107,9 +156,9 @@ func main() {
 		if err := searchTemplates.ExecuteTemplate(w, "layout", p); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-	})
+	}))
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/", withAuth(func(w http.ResponseWriter, r *http.Request) {
 
 		var p struct{ Books []Book }
 
@@ -128,7 +177,7 @@ func main() {
 		if err := libraryTemplates.ExecuteTemplate(w, "layout", p); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-	})
+	}))
 
 	fmt.Println(http.ListenAndServe(":4000", nil))
 }
@@ -172,4 +221,14 @@ func fetch(q string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	return ioutil.ReadAll(resp.Body)
+}
+
+func withAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if cookie, err := r.Cookie("user"); err != nil || cookie.Value == "" {
+			http.Redirect(w, r, "/login", 302)
+		} else {
+			next.ServeHTTP(w, r)
+		}
+	}
 }
