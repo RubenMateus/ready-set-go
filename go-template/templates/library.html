@@ -1,6 +1,11 @@
 {{define "content"}}
+{{ $books := "Books" }}
+{{ if eq (len .Books) 1 }}
+{{ $books = "Book" }}
+{{ end }}
+
 <p style="text-align: center;">
-  Your Library Contains {{len .Books }} Books
+  Your Library Contains {{len .Books }} {{$books}}
 </p>
 
 <form action="/" style="text-align: center;">
