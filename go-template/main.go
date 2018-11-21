@@ -99,18 +99,24 @@ func main() {
 		}
 	}
 
-	libraryTemplates := template.Must(
-		template.ParseFiles("templates/layout.html", "templates/library.html"))
-	searchTemplates := template.Must(
-		template.ParseFiles("templates/layout.html", "templates/search.html"))
-	loginTmpl := template.Must(template.ParseFiles("templates/login.html"))
+	libraryTemplates := template.Must(template.ParseFiles("templates/layout.html", "templates/library.html"))
+	searchTemplates := template.Must(template.ParseFiles("templates/layout.html", "templates/search.html"))
+
+	loginTmpl := template.Must(template.ParseFiles("templates/auth/authLayout.html", "templates/auth/login.html"))
+	registerTmpl := template.Must(template.ParseFiles("templates/auth/register.html"))
 
 	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "book.ico")
 	})
 
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		if err := loginTmpl.ExecuteTemplate(w, "login.html", nil); err != nil {
+		if err := loginTmpl.ExecuteTemplate(w, "authLayout", nil); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
+
+	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
+		if err := registerTmpl.ExecuteTemplate(w, "register.html", nil); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
