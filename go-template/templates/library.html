@@ -1,0 +1,66 @@
+{{define "content"}}
+{{ $books := "Books" }}
+{{ if eq (len .Books) 1 }}
+{{ $books = "Book" }}
+{{ end }}
+
+<p style="text-align: center;">
+  Your Library Contains {{len .Books }} {{$books}}
+</p>
+
+<form class="form-group" action="/" style="text-align: center; margin-bottom: 15px;">
+  <div class="form-row" style="align-items: center; justify-content: center;">
+    <div class="col-5" style="margin-right: 25px">
+      <select class="form-control" name="sort">
+        <option value="title">Sort By Title</option>
+        <option value="author">Sort By Author</option>
+        <option value="classification">Sort By Classification</option>
+      </select>
+    </div>
+    <div class="col-5" style="margin-right: 25px">
+      <select class="form-control" name="filter">
+        <option value="all">Show All</option>
+        <option value="000">
+          Show 000 - Computer science, information, general works
+        </option>
+        <option value="100">Show 100 - Philosophy, psychology</option>
+        <option value="200">Show 200 - Religion</option>
+        <option value="300">Show 300 - Social Sciences</option>
+        <option value="400">Show 400 - Language</option>
+        <option value="500">Show 500 - Science</option>
+        <option value="600">Show 600 - Technology</option>
+        <option value="700">Show 700 - Art, recreation</option>
+        <option value="800">Show 800 - Literature</option>
+        <option value="900">Show 900 - History, geography</option>
+      </select>
+    </div>
+    <input class="btn btn-outline-secondary" type="submit" value="Submit" />
+  </div>
+</form>
+
+<table class="table table-hover">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col" width="40%">Title</th>
+      <th scope="col" width="30%">Author</th>
+      <th scope="col" width="20%">Classification</th>
+      <th scope="col" width="20%"></th>
+    </tr>
+  </thead>
+  <tbody style="text-align: left;">
+    {{range .Books}}
+    <tr>
+      <td>{{.Title}}</td>
+      <td>{{.Author}}</td>
+      <td>{{.Classification}}</td>
+      <td>
+        <form action="/removebook">
+          <input type="hidden" name="bookId" value="{{.ID}}" />
+          <input class="btn btn-info" type="submit" value="Remove" />
+        </form>
+      </td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+{{end}}

@@ -1,0 +1,43 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Book Finder</title>
+
+  <!-- Bootstrap core CSS -->
+  <link href="https://bootswatch.com/4/lux/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <div style="width: 85%; margin: auto;">
+    <h4 class="text-center" style="margin-top: 20px">Search for your favourite book </h4>
+    <div>
+      <form style="float: right; margin-top: 23px;" action="/auth/logout">
+        <input class="btn btn-dark" type="submit" value="Log Out" />
+      </form>
+      <a class="btn btn-dark mr-2 mt-15" href="/" style="float: right; margin-top: 23px;">Your Library</a>
+      <br>
+
+      <form id="search-form" action="/search">
+        <div class="input-group mb-3 w-50 mx-auto">
+          <input class="form-control" class="mr-3" name="search" placeholder="Search..." />
+          <div class="input-group-append">
+            <input class="btn btn-outline-secondary" type="submit" value="Search" />
+          </div>
+        </div>
+      </form>
+    </div>
+    <hr>
+
+    {{template "content" .}}
+  </div>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+</body>
+
+</html>
+{{end}}
