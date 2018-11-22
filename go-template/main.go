@@ -103,7 +103,7 @@ func main() {
 	searchTemplates := template.Must(template.ParseFiles("templates/layout.html", "templates/search.html"))
 
 	loginTmpl := template.Must(template.ParseFiles("templates/auth/authLayout.html", "templates/auth/login.html"))
-	registerTmpl := template.Must(template.ParseFiles("templates/auth/register.html"))
+	registerTmpl := template.Must(template.ParseFiles("templates/auth/authLayout.html", "templates/auth/register.html"))
 
 	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "book.ico")
@@ -116,7 +116,7 @@ func main() {
 	})
 
 	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-		if err := registerTmpl.ExecuteTemplate(w, "register.html", nil); err != nil {
+		if err := registerTmpl.ExecuteTemplate(w, "authLayout", nil); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
