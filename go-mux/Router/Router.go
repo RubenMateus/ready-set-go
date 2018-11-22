@@ -1,10 +1,10 @@
-package Router
+package router
 
 import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	logger "github.com/rubenmateus/ready-set-go/go-mux/Logger"
+	logger "github.com/rubenmateus/ready-set-go/go-mux/logger"
 )
 
 func NewRouter() *mux.Router {

@@ -1,4 +1,4 @@
-package Models
+package models
 
 type Author struct {
 	FirstName string `json:"firstName,omitempty"`

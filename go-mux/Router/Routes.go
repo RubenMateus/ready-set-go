@@ -1,6 +1,6 @@
-package Router
+package router
 
-import h "github.com/rubenmateus/ready-set-go/go-mux/Handlers"
+import h "github.com/rubenmateus/ready-set-go/go-mux/handlers"
 
 var routes = Routes{
 	Route{"GetBooks", "GET", "/api/books", h.GetBooks},
