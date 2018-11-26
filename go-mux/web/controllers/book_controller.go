@@ -1,4 +1,4 @@
-package handler
+package controllers
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	. "github.com/rubenmateus/ready-set-go/go-mux/models"
+	. "github.com/rubenmateus/ready-set-go/go-mux/web/models"
 )
 
 var books = []Book{
@@ -18,6 +18,7 @@ var books = []Book{
 }
 
 func GetBooks(w http.ResponseWriter, r *http.Request) {
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(books)
 }

@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	router "github.com/rubenmateus/ready-set-go/go-mux/router"
+	router "github.com/rubenmateus/ready-set-go/go-mux/web/router"
 )
 
 func main() {
