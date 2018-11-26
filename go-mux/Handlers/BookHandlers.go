@@ -10,7 +10,7 @@ import (
 	. "github.com/rubenmateus/ready-set-go/go-mux/models"
 )
 
-var books = Books{
+var books = []Book{
 	// Mocked
 	Book{"1", "1321-321", "Book One", &Author{"John", "Doe"}},
 	Book{"2", "6667-321", "Book two", &Author{"Steve", "me"}},

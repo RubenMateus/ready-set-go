@@ -6,5 +6,3 @@ type Book struct {
 	Title  string  `json:"title,omitempty"`
 	Author *Author `json:"author,omitempty"`
 }
-
-type Books []Book
