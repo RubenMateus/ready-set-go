@@ -1,0 +1,2 @@
+# ready-set-go
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/bbcea3aaa5eb4433acca363a8a6ce28e)](https://app.codacy.com/app/RubenMateus/ready-set-go?utm_source=github.com&utm_medium=referral&utm_content=RubenMateus/ready-set-go&utm_campaign=Badge_Grade_Dashboard)
