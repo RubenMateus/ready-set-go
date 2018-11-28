@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
+	mapper "github.com/PeteProgrammer/go-automapper"
 	"github.com/gorilla/mux"
+	"github.com/rubenmateus/ready-set-go/go-mux/services"
 	. "github.com/rubenmateus/ready-set-go/go-mux/web/models"
 )
 
@@ -18,6 +20,10 @@ var books = []Book{
 }
 
 func GetBooks(w http.ResponseWriter, r *http.Request) {
+
+	var books []Book
+	serviceBooks := services.GetBooks()
+	mapper.MapLoose(serviceBooks, &books)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(books)
